@@ -34,7 +34,15 @@ def cleanup_old_files(directory, max_age_hours=1):
         print(f"Cleanup error: {e}")
 
 def download_image_from_url(url):
-    """Download image from URL and return as numpy array"""
+    """Download image from URL and return as numpy array
+    
+    SSRF Protection: This function implements multiple layers of protection:
+    1. URL scheme validation (HTTP/HTTPS only)
+    2. Private IP address blocking (loopback, private, link-local)
+    3. Redirect prevention (allow_redirects=False)
+    4. SSL certificate verification (verify=True)
+    5. Timeout to prevent hanging requests
+    """
     try:
         # Validate URL scheme to prevent SSRF
         from urllib.parse import urlparse
@@ -58,6 +66,7 @@ def download_image_from_url(url):
             # Not an IP address, it's a domain name - allow it
             pass
         
+        # Make request with SSRF protections enabled
         # SSL verification is enabled by default (verify=True)
         response = requests.get(url, timeout=10, verify=True, allow_redirects=False)
         response.raise_for_status()
