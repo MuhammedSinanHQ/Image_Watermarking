@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Watermarking App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+        
+        .alert-success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input[type="text"],
+        .form-group input[type="file"],
+        .form-group input[type="number"],
+        .form-group input[type="range"],
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input[type="text"]:focus,
+        .form-group input[type="file"]:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group input[type="range"] {
+            padding: 0;
+        }
+        
+        .range-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .divider {
+            margin: 30px 0;
+            border: 0;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .section-title {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .result-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .result-section img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        .download-btn:hover {
+            background: #218838;
+        }
+        
+        .flex-row {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .flex-row .form-group {
+            flex: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .flex-row {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖼️ Image Watermarking</h1>
+            <p>Add text or logo watermarks to your images with custom styling</p>
+        </div>
+        
+        <div class="content">
+            {% if error %}
+            <div class="alert alert-error">
+                ❌ {{ error }}
+            </div>
+            {% endif %}
+            
+            {% if success %}
+            <div class="alert alert-success">
+                ✅ Image processed successfully!
+            </div>
+            {% endif %}
+            
+            <form method="POST" enctype="multipart/form-data">
+                <div class="section-title">📁 Image Source</div>
+                
+                <div class="form-group">
+                    <label for="image_file">Upload Image File</label>
+                    <input type="file" id="image_file" name="image_file" accept="image/*">
+                    <div class="help-text">Supported formats: PNG, JPG, JPEG, BMP, WEBP</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="image_url">OR Enter Image URL</label>
+                    <input type="text" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
+                    <div class="help-text">Paste a direct link to an image</div>
+                </div>
+                
+                <hr class="divider">
+                
+                <div class="section-title">💧 Watermark Options</div>
+                
+                <div class="form-group">
+                    <label for="logo_file">Upload Logo (Optional)</label>
+                    <input type="file" id="logo_file" name="logo_file" accept="image/*">
+                    <div class="help-text">Add a logo as watermark</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="text">Text Watermark (Optional)</label>
+                    <input type="text" id="text" name="text" placeholder="© 2026 Your Name">
+                    <div class="help-text">Add custom text as watermark</div>
+                </div>
+                
+                <hr class="divider">
+                
+                <div class="section-title">⚙️ Watermark Settings</div>
+                
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label for="position">Position</label>
+                        <select id="position" name="position">
+                            <option value="top-left">Top Left</option>
+                            <option value="top-right">Top Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                            <option value="bottom-right" selected>Bottom Right</option>
+                            <option value="center">Center</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="opacity">
+                            Opacity
+                            <span class="range-value" id="opacity-value">0.5</span>
+                        </label>
+                        <input type="range" id="opacity" name="opacity" min="0" max="1" step="0.1" value="0.5">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scale">
+                            Scale
+                            <span class="range-value" id="scale-value">1.0</span>
+                        </label>
+                        <input type="range" id="scale" name="scale" min="0.1" max="3" step="0.1" value="1.0">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn">✨ Apply Watermark</button>
+            </form>
+            
+            {% if result_image %}
+            <div class="result-section">
+                <h2>🎉 Your Watermarked Image</h2>
+                <img src="{{ result_image }}" alt="Watermarked Image">
+                <br>
+                <a href="{{ result_image }}" download class="download-btn">⬇️ Download Image</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        // Update range slider values
+        document.getElementById('opacity').addEventListener('input', function(e) {
+            document.getElementById('opacity-value').textContent = e.target.value;
+        });
+        
+        document.getElementById('scale').addEventListener('input', function(e) {
+            document.getElementById('scale-value').textContent = e.target.value;
+        });
+    </script>
+</body>
+</html>
