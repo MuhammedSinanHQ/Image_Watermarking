@@ -7,6 +7,8 @@ from PIL import Image
 from flask import Flask, render_template, request, send_file, url_for
 from werkzeug.utils import secure_filename
 import uuid
+import time
+from pathlib import Path
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/output'
@@ -20,9 +22,26 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp', 'webp'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def cleanup_old_files(directory, max_age_hours=1):
+    """Remove files older than max_age_hours from directory"""
+    try:
+        current_time = time.time()
+        for filepath in Path(directory).glob('result_*.png'):
+            if current_time - filepath.stat().st_mtime > max_age_hours * 3600:
+                filepath.unlink()
+    except Exception as e:
+        # Log but don't fail if cleanup fails
+        print(f"Cleanup error: {e}")
+
 def download_image_from_url(url):
     """Download image from URL and return as numpy array"""
     try:
+        # Validate URL scheme to prevent SSRF
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        if parsed.scheme not in ['http', 'https']:
+            raise Exception("Only HTTP and HTTPS URLs are allowed")
+        
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
@@ -102,13 +121,22 @@ def add_logo_watermark(image, logo, position, opacity, scale):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    # Cleanup old files periodically
+    cleanup_old_files(app.config['UPLOAD_FOLDER'])
+    
     if request.method == 'POST':
         try:
-            # Get form data
+            # Get and validate form data
             opacity = float(request.form.get('opacity', 0.5))
             position = request.form.get('position', 'bottom-right')
             scale = float(request.form.get('scale', 1.0))
             text = request.form.get('text', '')
+            
+            # Validate opacity and scale ranges
+            if not (0.0 <= opacity <= 1.0):
+                return render_template('index.html', error='Opacity must be between 0.0 and 1.0')
+            if not (0.1 <= scale <= 3.0):
+                return render_template('index.html', error='Scale must be between 0.1 and 3.0')
             
             # Load main image
             image = None
