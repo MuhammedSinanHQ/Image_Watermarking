@@ -42,7 +42,8 @@ def download_image_from_url(url):
         if parsed.scheme not in ['http', 'https']:
             raise Exception("Only HTTP and HTTPS URLs are allowed")
         
-        response = requests.get(url, timeout=10)
+        # SSL verification is enabled by default (verify=True)
+        response = requests.get(url, timeout=10, verify=True)
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
         return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
