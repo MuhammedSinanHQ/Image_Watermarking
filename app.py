@@ -38,12 +38,28 @@ def download_image_from_url(url):
     try:
         # Validate URL scheme to prevent SSRF
         from urllib.parse import urlparse
+        import ipaddress
+        
         parsed = urlparse(url)
         if parsed.scheme not in ['http', 'https']:
             raise Exception("Only HTTP and HTTPS URLs are allowed")
         
+        # Validate hostname to prevent access to private IPs
+        hostname = parsed.hostname
+        if not hostname:
+            raise Exception("Invalid URL: no hostname")
+        
+        # Try to resolve and check if it's a private IP
+        try:
+            ip = ipaddress.ip_address(hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local:
+                raise Exception("Access to private IP addresses is not allowed")
+        except ValueError:
+            # Not an IP address, it's a domain name - allow it
+            pass
+        
         # SSL verification is enabled by default (verify=True)
-        response = requests.get(url, timeout=10, verify=True)
+        response = requests.get(url, timeout=10, verify=True, allow_redirects=False)
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
         return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
@@ -181,4 +197,6 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Debug mode should only be enabled in development
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
